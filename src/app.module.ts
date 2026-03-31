@@ -32,6 +32,9 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
         database: configService.get('DB_DATABASE'),
         entities: [User, Dress, FittingAppointment, Rental, RefreshToken],
         synchronize: false, // chỉ dùng trong dev, production nên set false
+        ssl: {
+          rejectUnauthorized: false, // Bắt buộc để kết nối DB Cloud
+        },
       }),
       inject: [ConfigService],
     }),
