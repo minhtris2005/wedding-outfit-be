@@ -3,11 +3,13 @@ import {
   BadRequestException,
   Injectable,
   UnauthorizedException,
+  Inject,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from 'src/entities/User';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { RefreshToken } from 'src/entities/RefreshToken';
 import { LoginDto } from 'src/dto/login.dto';
@@ -22,6 +24,7 @@ export class AuthService {
     @InjectRepository(RefreshToken)
     private refreshTokenRepo: Repository<RefreshToken>,
     private jwtService: JwtService,
+    private configService: ConfigService, // Thêm ConfigService
   ) {}
 
   // ==================== COOKIE HANDLING ====================
@@ -30,7 +33,7 @@ export class AuthService {
     accessToken: string,
     refreshToken: string,
   ) {
-    const isProduction = process.env.NODE_ENV === 'production';
+    const isProduction = this.configService.get('NODE_ENV') === 'production';
 
     response.cookie('access_token', accessToken, {
       httpOnly: true,
@@ -81,12 +84,14 @@ export class AuthService {
     };
 
     const accessToken = this.jwtService.sign(payload, {
-      expiresIn: '15m',
+      expiresIn: this.configService.get('JWT_ACCESS_EXPIRES') || '15m',
     });
 
     const refreshToken = this.jwtService.sign(payload, {
-      secret: process.env.REFRESH_SECRET || 'REFRESH_SECRET_KEY',
-      expiresIn: '7d',
+      secret:
+        this.configService.get('JWT_REFRESH_SECRET') ||
+        this.configService.get('JWT_SECRET'),
+      expiresIn: this.configService.get('JWT_REFRESH_EXPIRES') || '7d',
     });
 
     await this.saveRefreshToken(user.id, refreshToken);
@@ -105,7 +110,9 @@ export class AuthService {
   async refreshToken(refreshToken: string) {
     try {
       const payload = this.jwtService.verify(refreshToken, {
-        secret: process.env.REFRESH_SECRET || 'REFRESH_SECRET_KEY',
+        secret:
+          this.configService.get('JWT_REFRESH_SECRET') ||
+          this.configService.get('JWT_SECRET'),
       });
 
       const tokenExists = await this.refreshTokenRepo.findOne({
@@ -127,7 +134,7 @@ export class AuthService {
           role: payload.role,
         },
         {
-          expiresIn: '15m',
+          expiresIn: this.configService.get('JWT_ACCESS_EXPIRES') || '15m',
         },
       );
 
@@ -183,7 +190,7 @@ export class AuthService {
   async getProfile(userId: number) {
     const user = await this.usersRepo.findOne({
       where: { id: userId },
-      select: ['id', 'email', 'role'], // Chỉ lấy các field cần thiết
+      select: ['id', 'email', 'role'],
     });
 
     if (!user) {
@@ -233,11 +240,8 @@ export class AuthService {
     currentPassword: string,
     newPassword: string,
   ) {
-    // Dùng hàm validateUser để kiểm tra email + mật khẩu hiện tại
-    // Hàm này đã tự động throw error nếu sai
     const user = await this.validateUser(email, currentPassword);
 
-    // Kiểm tra mật khẩu mới không được giống mật khẩu cũ
     const isSamePassword = await bcrypt.compare(newPassword, user.password);
     if (isSamePassword) {
       throw new BadRequestException(
@@ -245,18 +249,14 @@ export class AuthService {
       );
     }
 
-    // Kiểm tra độ dài mật khẩu mới
     if (newPassword.length < 6) {
       throw new BadRequestException('Mật khẩu mới phải có ít nhất 6 ký tự');
     }
 
-    // Hash mật khẩu mới
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    // Cập nhật mật khẩu mới
     await this.usersRepo.update({ id: user.id }, { password: hashedPassword });
 
-    // Vô hiệu hóa tất cả refresh tokens cũ (bắt buộc đăng nhập lại)
     await this.refreshTokenRepo.update(
       { userId: user.id, isRevoked: false },
       { isRevoked: true },

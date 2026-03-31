@@ -13,18 +13,27 @@ import { RentalsModule } from './modules/rentals/rentals.module';
 import { Rental } from './entities/Rental';
 import { BookingModule } from './modules/bookings/bookings.module';
 import { RefreshToken } from './entities/RefreshToken';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 
 @Module({
   imports: [
-    TypeOrmModule.forRoot({
-      type: 'postgres', // Loại database: mysql, postgres, sqlite, etc,..
-      host: 'localhost',
-      port: 5432,
-      username: 'postgres',
-      password: '24092005T',
-      database: 'postgres',
-      entities: [User, Dress, FittingAppointment, Rental, RefreshToken], //danh sách các entity sẽ ánh xạ
-      synchronize: true, //tự động tạo bảng từ entity(chỉ dùng trong dev)
+    ConfigModule.forRoot({
+      envFilePath: '.env.local',
+      isGlobal: true,
+    }),
+    TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
+        type: 'postgres',
+        host: configService.get('DB_HOST'),
+        port: configService.get('DB_PORT'),
+        username: configService.get('DB_USERNAME'),
+        password: configService.get('DB_PASSWORD'),
+        database: configService.get('DB_DATABASE'),
+        entities: [User, Dress, FittingAppointment, Rental, RefreshToken],
+        synchronize: false, // chỉ dùng trong dev, production nên set false
+      }),
+      inject: [ConfigService],
     }),
     UsersModule,
     AuthModule,
