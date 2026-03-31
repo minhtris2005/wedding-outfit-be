@@ -33,13 +33,15 @@ export class AuthService {
     accessToken: string,
     refreshToken: string,
   ) {
-    const isProduction = this.configService.get('NODE_ENV') === 'production';
+    const isProduction = process.env.NODE_ENV === 'production';
 
     response.cookie('access_token', accessToken, {
       httpOnly: true,
-      secure: isProduction,
-      sameSite: 'strict',
-      maxAge: 15 * 60 * 1000, // 15 phút
+      // Trên Production (Railway) bắt buộc phải là true để dùng được sameSite: 'none'
+      secure: true,
+      // 'none' cho phép gửi cookie giữa các domain khác nhau (Vercel <-> Railway)
+      sameSite: isProduction ? 'none' : 'lax',
+      maxAge: 15 * 60 * 1000,
       path: '/',
     });
 
