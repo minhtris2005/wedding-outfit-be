@@ -16,7 +16,7 @@ import { RefreshToken } from 'src/entities/RefreshToken';
       useFactory: async (configService: ConfigService) => ({
         secret: configService.get('JWT_SECRET'),
         signOptions: {
-          expiresIn: configService.get('JWT_ACCESS_EXPIRES') || '30s',
+          expiresIn: configService.get('JWT_ACCESS_EXPIRES') || '15m',
         },
       }),
       inject: [ConfigService],

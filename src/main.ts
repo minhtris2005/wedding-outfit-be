@@ -8,10 +8,10 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
   app.use(cookieParser());
   app.enableCors({
-    origin: configService.get('FRONTEND_URL') || 'http://localhost:3001',
+    origin: configService.get('FRONTEND_URL') || 'http://localhost:3000',
     credentials: true,
   });
-  const port = configService.get('PORT') || 3000;
+  const port = configService.get('PORT') || 3001;
   app.useGlobalPipes(new ValidationPipe());
   await app.listen(port);
 }
