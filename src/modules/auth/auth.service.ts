@@ -16,6 +16,7 @@ import { LoginDto } from 'src/dto/login.dto';
 import { RegisterDto } from 'src/dto/register.dto';
 import { Response } from 'express';
 import * as nodemailer from 'nodemailer';
+import SMTPTransport from 'nodemailer/lib/smtp-transport';
 @Injectable()
 export class AuthService {
   constructor(
@@ -291,13 +292,19 @@ export class AuthService {
     );
 
     // 5. Cấu hình Transporter của Nodemailer
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
+
+    const transportOptions = {
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true,
       auth: {
         user: this.configService.get('EMAIL_USER'),
         pass: this.configService.get('EMAIL_PASS'),
       },
-    });
+      family: 4,
+    } as unknown as SMTPTransport.Options;
+
+    const transporter = nodemailer.createTransport(transportOptions);
 
     // 6. Nội dung email
     const mailOptions = {
