@@ -33,7 +33,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
         entities: [User, Dress, FittingAppointment, Rental, RefreshToken],
         synchronize: true, // chỉ dùng trong dev, production nên set false
         ssl: {
-          rejectUnauthorized: false, // Bắt buộc để kết nối DB Cloud
+          rejectUnauthorized: false, // Bắt buộc để kết nối DB Cloud.
         },
       }),
       inject: [ConfigService],
