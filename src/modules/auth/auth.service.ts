@@ -304,6 +304,7 @@ export class AuthService {
       family: 4,
       tls: {
         rejectUnauthorized: false, // Thêm cái này để tránh lỗi chứng chỉ nếu có
+        minVersion: 'TLSv1.2',
       },
     } as unknown as SMTPTransport.Options;
 
