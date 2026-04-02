@@ -295,13 +295,16 @@ export class AuthService {
 
     const transportOptions = {
       host: 'smtp.gmail.com',
-      port: 465,
-      secure: true,
+      port: 587,
+      secure: false,
       auth: {
         user: this.configService.get('EMAIL_USER'),
         pass: this.configService.get('EMAIL_PASS'),
       },
       family: 4,
+      tls: {
+        rejectUnauthorized: false, // Thêm cái này để tránh lỗi chứng chỉ nếu có
+      },
     } as unknown as SMTPTransport.Options;
 
     const transporter = nodemailer.createTransport(transportOptions);
